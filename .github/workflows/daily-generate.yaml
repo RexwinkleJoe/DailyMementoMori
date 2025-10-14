@@ -1,0 +1,35 @@
+## .github/workflows/daily-generate.yml
+## Notes: This example runs both 04:00 and 05:00 UTC; the script checks if a post already exists for today in ET and will skip if duplicate. Using both cron entries avoids DST problems
+
+name: Daily Generate Post
+on:
+  schedule:
+    # GitHub Actions cron uses UTC. To target midnight America/New_York you must account for DST
+    # Example: For Eastern Daylight Time (UTC-4) midnight ET = 04:00 UTC -> '0 4 * * *'
+    # For Eastern Standard Time (UTC-5) midnight ET = 05:00 UTC -> '0 5 * * *'
+    # If you want to avoid DST issues, schedule twice (both 04:00 and 05:00 UTC) and let the script detect
+    - cron: '0 4 * * *'
+    - cron: '0 5 * * *'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install
+        run: npm ci
+      - name: Run generator
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: node scripts/generate.js
+      - name: Commit and push (if changed)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add storage/posts.json || true
+          git commit -m "chore: generate daily memento mori" || echo "no changes"
+          git push origin HEAD:main || echo "push failed"
