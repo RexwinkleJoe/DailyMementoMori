@@ -1,0 +1,18 @@
+{
+  "name": "daily-memento-mori",
+  "version": "1.0.0",
+  "description": "Daily Memento Mori - A gentle daily reminder to live well",
+  "main": "index.js",
+  "scripts": {
+    "generate": "node scripts/generate.js",
+    "dev": "python -m http.server 8000",
+    "build": "echo 'Static site - no build needed'"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {},
+  "keywords": ["memento-mori", "daily", "reflection", "mindfulness"],
+  "author": "",
+  "license": "MIT"
+}

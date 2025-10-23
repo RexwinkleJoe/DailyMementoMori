@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Memento Mori</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <main class="min-h-screen flex items-center justify-center p-6">
+        <div class="max-w-2xl w-full bg-white shadow-lg rounded-2xl p-8">
+            <header class="mb-4">
+                <h1 class="text-2xl font-semibold">Daily Memento Mori</h1>
+                <p class="text-sm text-gray-500">A gentle daily reminder to live well — one short item a day.</p>
+            </header>
+
+            <div id="loading" class="py-12 text-center loading">
+                Loading today's post…
+            </div>
+
+            <div id="error" class="text-red-600 hidden">
+                <p id="error-message"></p>
+            </div>
+
+            <article id="post" class="hidden">
+                <div id="post-type" class="text-xs uppercase text-gray-400 tracking-wide"></div>
+                <h2 id="post-title" class="text-xl font-medium mt-2"></h2>
+                <p id="post-body" class="mt-4 text-gray-700 whitespace-pre-line"></p>
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg border"> 
+                    <strong class="text-sm">Takeaway</strong>
+                    <p id="post-takeaway" class="text-sm text-gray-600 mt-1"></p>
+                </div>
+                <footer id="post-date" class="mt-6 text-xs text-gray-400"></footer>
+            </article>
+
+            <div class="mt-6 flex gap-3">
+                <button id="share-btn" class="px-3 py-2 rounded-md bg-indigo-600 text-white text-sm">Share</button>
+                <button id="save-btn" class="px-3 py-2 rounded-md border text-sm">Save</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadPost() {
+            try {
+                const response = await fetch('storage/posts.json');
+                if (!response.ok) throw new Error('Failed to fetch posts');
+                
+                const posts = await response.json();
+                
+                // Get today's date in Eastern Time
+                const now = new Date();
+                const parts = now.toLocaleString('en-US', {timeZone: 'America/New_York'});
+                const ny = new Date(parts);
+                const yyyy = ny.getFullYear();
+                const mm = String(ny.getMonth() + 1).padStart(2, '0');
+                const dd = String(ny.getDate()).padStart(2, '0');
+                const today = `${yyyy}-${mm}-${dd}`;
+                
+                const post = posts[today];
+                if (!post) {
+                    throw new Error('No post for today yet');
+                }
+                
+                // Hide loading, show post
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('post').classList.remove('hidden');
+                
+                // Populate post data
+                document.getElementById('post-type').textContent = post.type;
+                document.getElementById('post-title').textContent = post.title;
+                document.getElementById('post-body').textContent = post.body;
+                document.getElementById('post-takeaway').textContent = post.takeaway;
+                document.getElementById('post-date').textContent = post.date;
+                
+            } catch (error) {
+                console.error('Error loading post:', error);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+
+        // Share functionality
+        document.getElementById('share-btn').addEventListener('click', () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Daily Memento Mori',
+                    text: document.getElementById('post-title').textContent,
+                    url: window.location.href
+                });
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    alert('Link copied to clipboard!');
+                });
+            }
+        });
+
+        // Save functionality (localStorage)
+        document.getElementById('save-btn').addEventListener('click', () => {
+            const postData = {
+                type: document.getElementById('post-type').textContent,
+                title: document.getElementById('post-title').textContent,
+                body: document.getElementById('post-body').textContent,
+                takeaway: document.getElementById('post-takeaway').textContent,
+                date: document.getElementById('post-date').textContent
+            };
+            
+            const saved = JSON.parse(localStorage.getItem('savedPosts') || '[]');
+            saved.push(postData);
+            localStorage.setItem('savedPosts', JSON.stringify(saved));
+            
+            alert('Post saved!');
+        });
+
+        // Load post when page loads
+        loadPost();
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+name: Daily Generate Post
+
+on:
+  schedule:
+    # GitHub Actions cron uses UTC. To target midnight America/New_York you must account for DST
+    # Example: For Eastern Daylight Time (UTC-4) midnight ET = 04:00 UTC -> '0 4 * * *'
+    # For Eastern Standard Time (UTC-5) midnight ET = 05:00 UTC -> '0 5 * * *'
+    # If you want to avoid DST issues, schedule twice (both 04:00 and 05:00 UTC) and let the script detect
+    - cron: '0 4 * * *'
+    - cron: '0 5 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run generator
+        env:
+          # Pull OPENAI_API_KEY from GitHub Secrets
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: npm run generate
+
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add storage/posts.json
+          git commit -m "chore: generate daily memento mori post for $(date +%Y-%m-%d)"
+          git push
