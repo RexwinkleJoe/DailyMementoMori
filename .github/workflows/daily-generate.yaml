@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 18
       - name: Install
-        run: npm ci
+        run: npm install
       - name: Run generator
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
