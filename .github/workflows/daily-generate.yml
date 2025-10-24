@@ -13,11 +13,15 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -49,4 +53,4 @@ jobs:
           git config --local user.name "GitHub Action"
           git add storage/posts.json
           git commit -m "chore: generate daily memento mori post for $(date +%Y-%m-%d)"
-          git push
+          git push origin HEAD:main
